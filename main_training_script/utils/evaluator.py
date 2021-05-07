@@ -1,58 +1,22 @@
 import torch
 import numpy as np
-from torchvision.utils import make_grid
 import datetime
-from utils.utils import check_dir
 import os
-from torch.utils import tensorboard
+import shutil
 
-class ExpRecorder(object):
-    def __init__(self,configs,name):
-        self.configs = configs
-        self.exp_time = datetime.datetime.now().strftime("%m_%d_%H_%M")
-        self.saver_folder = os.path.join("run", name,self.exp_time)
-        check_dir(self.saver_folder)
-        self.writer=tensorboard.SummaryWriter(self.saver_folder)
-        self.best_pred=0.0
+from torchvision.utils import make_grid
 
-    def _save_model(self,state,epoch,class_Iou):
-        save_name=os.path.join(self.saver_folder,'model_'+str(epoch)+'.pth')
-        if(epoch>=1):
-            delete_name=self.saver_folder+'/model_'+str(epoch-1)+'.pth'
-            if(os.path.exists(delete_name)):
-                os.remove(delete_name)
-        torch.save(state,save_name)
-        pre=state['best_prediction']
-        if self.best_pred<pre:
-            self.best_pred=pre
-            best_name=os.path.join(self.saver_folder,'best_model.pth')
-            torch.save(state,best_name)
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
 
-    def _update_writer(self,loss,acc,optimizer,step,mode='train'):
-        self.writer.add_scalar(''+str(mode)+'/total_loss',loss,step)
-        self.writer.add_scalar(''+str(mode)+'/Cla_acc',acc.item(),step)
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
 
-        if mode=='train':
-            for i , para_group in enumerate(optimizer.param_groups):
-                self.writer.add_scalar('lr',para_group['lr'],step)
-
-class AverageMeter(object):
-    "help computing and storing the metrics"
-    def __init__(self):
-        self.val=0
-        self.avg=0
-        self.sum=0
-        self.count=0
-
-    def update(self,value,count=1):
-        self.val=value
-        self.sum+=value*count
-        self.count+=count
-        self.avg=self.sum/self.count
-
-    @property
-    def value(self):
-        return self.val
-
-    def average(self):
-        return np.round(self.avg,5)
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res

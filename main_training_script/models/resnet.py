@@ -112,8 +112,8 @@ def ResNet34():
     return ResNet(BasicBlock, [3, 4, 6, 3])
 
 
-def ResNet50(normalization_layer_name=None):
-    return ResNet(Bottleneck, [3, 4, 6, 3], normalization_layer_name=normalization_layer_name)
+def ResNet50(num_classes, normalization_layer_name=None):
+    return ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, normalization_layer_name=normalization_layer_name)
 
 
 def ResNet101():

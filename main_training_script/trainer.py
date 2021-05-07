@@ -1,118 +1,175 @@
 import torch
-import numpy as np
-from utils.utils import Poly
-from tqdm import tqdm
 import torch.nn as nn
-from utils.evaluator import AverageMeter,Exp_Recorder
+import os
+import shutil
+import time
+
+from utils.logger import Logger, savefig
+from utils.evaluator import accuracy
+from utils.misc import AverageMeter
+from tqdm import tqdm
 
 class Trainer(object):
 
-    def __init__(self,model,args,Data_loader,name='CIFAR'):
-        self.mode,self.val_step='train_',0
-        self.model=model
-        self.start_epoch=1
-        self.end_epoch=args.epoch
-        self.nbr_classes=10
-        self.eval_interval=args.eval
-        self.loss=nn.CrossEntropyLoss()
-        self.train_loader=Data_loader[0]
-        self.val_loader=Data_loader[1]
-        self.loader_name=name
-        self.saver=Exp_Recorder(configs=args,name=self.loader_name)
+    def __init__(self, model, args, data_loader, name):
+        self.best_acc = 0
+        
+        self.args = args
+        self.trainloader = data_loader[0]
+        self.testloader = data_loader[1]
+        self.model = model
+        self.model.cuda()
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        self.start_epoch = args.start_epoch
+        self.end_epoch = args.epochs
 
-
-
-        if isinstance(self.model,torch.nn.DataParallel):
-            trainable_parameters=[{'params': filter(lambda p:p.requires_grad, self.model.module.parameters())}]
-        else:
-            trainable_parameters=filter(lambda p:p.requires_grad,self.model.parameters())
-
-        self.optimizer=torch.optim.SGD(trainable_parameters,args.lr)
-        self.lr_scheduler=Poly(self.optimizer,self.end_epoch,len(self.train_loader))
-
+        title = name
         if args.resume:
-            self._resume(path=args.resume)
+            print('==> Resuming from checkpoint..')
+            assert os.path.isfile(args.resume), 'Error: no checkpoint file found!'
+            args.checkpoint = os.path.dirname(args.resume)
+            self._resume(args.resume, title)
+        else:
+            self.logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
+            self.logger.set_names(['Learning Rate', 'Train Loss', 'Valid Loss', 'Train Acc.', 'Valid Acc.'])
+        
+        if args.evaluate:
+            print('\nEvaluation only')
+            test_loss, test_acc = trainer.test(self.testloader, self.model, self.criterion, self.start_epoch)
+            print(' Test Loss:  %.8f, Test Acc:  %.2f' % (test_loss, test_acc))
 
+    def train(self):
+        for epoch in range(self.start_epoch, self.end_epoch):
+            self.adjust_learning_rate(epoch)
 
+            print('\nEpoch: [%d | %d] LR: %f' % (epoch + 1, self.args.epochs, self.args.lr))
+            train_loss, train_acc = self._train_one_epoch(epoch)
+            test_loss, test_acc = self.test(epoch)
 
-    def training(self):
+            self.logger.append([self.args.lr, train_loss, test_loss, train_acc, test_acc])
+            
+            # Saving Best Model
+            is_best = test_acc > self.best_acc
+            self.best_acc = max(test_acc, self.best_acc)
+            self._save_checkpoint({
+                    'epoch': epoch + 1,
+                    'state_dict': self.model.state_dict(),
+                    'acc': test_acc,
+                    'best_acc': self.best_acc,
+                    'optimizer' : self.optimizer.state_dict(),
+                }, is_best, checkpoint=self.args.checkpoint)
+
+        self.logger.close()
+        self.logger.plot()
+        savefig(os.path.join(self.args.checkpoint, 'log.eps'))
+
+        print('Best acc:')
+        print(self.best_acc)
+
+    def _train_one_epoch(self, epoch):
         self.model.train()
-        for epoch in range(self.start_epoch,self.end_epoch+1):
-            self._train_epoch(epoch)
-            if (epoch%self.eval_interval):
-                self._val_epoch(epoch)
-
-    def _train_epoch(self,epoch):
-        tbar=tqdm(self.train_loader,ncols=130)
         self._reset_metric()
-        print("Current Learning Rate: {:.5f}          Current Best Prediction : {:.4f}".format(self.lr_scheduler.get_lr()[0],self.saver.best_pred))
-        for step, (input,target) in enumerate(tbar):
-            input = input.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
+        end = time.time()
+
+        tbar = tqdm(self.trainloader, ncols=130)
+        
+        for batch_idx, (inputs, targets) in enumerate(tbar):
+            self.data_time.update(time.time() - end)
+
+            # Main Output
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+            outputs = self.model(inputs)
+            loss = self.criterion(outputs, targets)
+
+            # Metric
+            prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 5))
+            self.losses.update(loss.item(), inputs.size(0))
+            self.top1.update(prec1.item(), inputs.size(0))
+            self.top5.update(prec5.item(), inputs.size(0))
+
+            # Gradient and Backward
             self.optimizer.zero_grad()
-            output=self.model(input)
-            loss=self.loss(output,target)
             loss.backward()
             self.optimizer.step()
 
-            self.lr_scheduler.step(epoch=epoch-1)
+            # Additional Things
+            self.batch_time.update(time.time() - end)
+            end = time.time()
 
-            prediction=output.max(1)[1]
-            acc=(prediction==target).float().sum()/target.shape[0]
+            tbar.set_description('({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
+                        batch=batch_idx + 1,
+                        size=len(self.trainloader),
+                        data=self.data_time.avg,
+                        bt=self.batch_time.avg,
+                        loss=self.losses.avg,
+                        top1=self.top1.avg,
+                        top5=self.top5.avg,
+                    ))
 
-            self._update_metrics(loss,acc)
+        return (self.losses.avg, self.top1.avg)
 
-            tbar.set_description('Train ({}) |cla_loss:{:.4f}|cla_acc:{:.4f}|'.format(
-                epoch,self.total_loss.average(),
-            self.total_acc.average()))
-        self.saver._update_writer(self.total_loss.average(),self.total_acc.average(),self.optimizer,epoch,mode='train')
-
-
-    def _val_epoch(self,epoch):
-        tbar=tqdm(self.val_loader,ncols=130)
-        self.model.eval()
+    def test(self, epoch):
         self._reset_metric()
-        for step, (input,target) in enumerate(tbar):
-            input = input.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
-            output=self.model(input)
-            loss=self.loss(output,target)
-            prediction=output.max(1)[1]
+        self.model.eval()
+        
+        end = time.time()
+        tbar = tqdm(self.testloader, ncols=130)
+        for batch_idx, (inputs, targets) in enumerate(tbar):
+            self.data_time.update(time.time() - end)
 
-            acc=(prediction==target).float().sum()/target.shape[0]
+            # Main Output
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+            outputs = self.model(inputs)
+            loss = self.criterion(outputs, targets)
+            
+            # Metric
+            prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 5))
+            self.losses.update(loss.item(), inputs.size(0))
+            self.top1.update(prec1.item(), inputs.size(0))
+            self.top5.update(prec5.item(), inputs.size(0))
 
-            self._update_metrics(loss,acc)
+            # Additional Things
+            self.batch_time.update(time.time() - end)
+            end = time.time()
 
-            tbar.set_description('Eval ({}) |cla_loss:{:.4f}|cla_acc:{:.4f}|'.format(
-                epoch,self.total_loss.average(),
-            self.total_acc.average()))
+            tbar.set_description('({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
+                    batch=batch_idx + 1,
+                    size=len(self.testloader),
+                    data=self.data_time.avg,
+                    bt=self.batch_time.avg,
+                    loss=self.losses.avg,
+                    top1=self.top1.avg,
+                    top5=self.top5.avg,
+            ))
+        
+        return (self.losses.avg, self.top1.avg)
 
-        self.saver._update_writer(self.total_loss.average(),self.total_acc.average(),self.optimizer,epoch,mode='Eval')
-        self._save_checkpoint(epoch,self.total_acc.average())
-
-
-
-    def _resume(self,path):
-
-        checkpoint=torch.load(path)
+    def _resume(self, path, title):
+        checkpoint = torch.load(path)
+        self.best_acc = checkpoint['best_acc']
+        self.start_epoch = checkpoint['epoch']
         self.model.load_state_dict(checkpoint['state_dict'])
-        self.start_epoch=checkpoint['epoch']
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.logger = Logger(os.path.join(self.args.checkpoint, 'log.txt'), title=title, resume=True)
 
     def _reset_metric(self):
-        self.total_loss=AverageMeter()
-        self.total_acc=AverageMeter()
+        self.batch_time = AverageMeter()
+        self.data_time = AverageMeter()
+        self.losses = AverageMeter()
+        self.top1 = AverageMeter()
+        self.top5 = AverageMeter()
 
-    def _update_metrics(self,cla_loss,acc):
-        self.total_loss.update(cla_loss.item())
-        self.total_acc.update(acc.item())
+    def _save_checkpoint(self, state, is_best, checkpoint='checkpoint', filename='checkpoint.pth.tar'):
+        filepath = os.path.join(checkpoint, filename)
+        torch.save(state, filepath)
+        if is_best:
+            shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
 
-
-
-    def _save_checkpoint(self,epoch,acc):
-        state={
-            'state_dict': self.model.state_dict(),
-            'epoch':epoch,
-            'optimizer':self.optimizer.state_dict(),
-            'best_prediction':acc
-        }
-        self.saver._save_model(state,epoch,acc)
+    def adjust_learning_rate(self, epoch):
+        if epoch in self.args.schedule:
+            self.args.lr *= self.args.gamma
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = self.args.lr
