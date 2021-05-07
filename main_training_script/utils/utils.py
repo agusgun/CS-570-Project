@@ -29,14 +29,9 @@ class Poly(_LRScheduler):
         self.cur_iter += 1
         return [base_lr * factor for base_lr in self.base_lrs]
 
-
-
-def Check_dir(path):
+def check_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
-
-
-
 
 if __name__ == "__main__":
     import torchvision

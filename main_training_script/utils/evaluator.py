@@ -2,24 +2,18 @@ import torch
 import numpy as np
 from torchvision.utils import make_grid
 import datetime
-from utils.utils import Check_dir
+from utils.utils import check_dir
 import os
 from torch.utils import tensorboard
 
-value_scale = 255
-mean = [0.485, 0.456, 0.406]
-std = [0.229, 0.224, 0.225]
-
-class Exp_Recorder(object):
-
+class ExpRecorder(object):
     def __init__(self,configs,name):
-        self.configs=configs
-        self.exp_time=datetime.datetime.now().strftime("%m_%d_%H_%M")
-        self.saver_folder=os.path.join("run",name,self.exp_time)
-        Check_dir(self.saver_folder)
+        self.configs = configs
+        self.exp_time = datetime.datetime.now().strftime("%m_%d_%H_%M")
+        self.saver_folder = os.path.join("run", name,self.exp_time)
+        check_dir(self.saver_folder)
         self.writer=tensorboard.SummaryWriter(self.saver_folder)
         self.best_pred=0.0
-
 
     def _save_model(self,state,epoch,class_Iou):
         save_name=os.path.join(self.saver_folder,'model_'+str(epoch)+'.pth')
@@ -34,7 +28,6 @@ class Exp_Recorder(object):
             best_name=os.path.join(self.saver_folder,'best_model.pth')
             torch.save(state,best_name)
 
-
     def _update_writer(self,loss,acc,optimizer,step,mode='train'):
         self.writer.add_scalar(''+str(mode)+'/total_loss',loss,step)
         self.writer.add_scalar(''+str(mode)+'/Cla_acc',acc.item(),step)
@@ -42,11 +35,6 @@ class Exp_Recorder(object):
         if mode=='train':
             for i , para_group in enumerate(optimizer.param_groups):
                 self.writer.add_scalar('lr',para_group['lr'],step)
-
-
-
-
-
 
 class AverageMeter(object):
     "help computing and storing the metrics"

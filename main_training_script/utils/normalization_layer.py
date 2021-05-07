@@ -1,7 +1,8 @@
+# Moved from Experimentation to Testing
 import torch
 import torch.nn as nn
 
-
+# Original Implementation of GN
 class GroupNorm2d(nn.Module):
     def __init__(self, group_num, c_num, eps = 1e-5):
         super(GroupNorm2d,self).__init__()
@@ -22,6 +23,7 @@ class GroupNorm2d(nn.Module):
         x = x.view(N, C, H, W)
         return x * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPlusParallel(nn.Module):
     # Unflowing gradient also occurs here
     def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
@@ -47,6 +49,7 @@ class GNPlusParallel(nn.Module):
         
         return (self.lambda_param[0] * x_gn + (1 - self.lambda_param[0]) * x) * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPlusSequentialGNFirst(nn.Module):
     def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
         super(GNPlusSequentialGNFirst,self).__init__()
@@ -71,6 +74,7 @@ class GNPlusSequentialGNFirst(nn.Module):
         
         return (self.lambda_param[0] * x_gn + (1 - self.lambda_param[0]) * x_bn) * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPLusSequentialBNFirst(nn.Module):
     def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
         super(GNPLusSequentialBNFirst,self).__init__()
@@ -105,6 +109,6 @@ def get_norm_layer(c_out, n_group=32, norm='bn'):
     elif norm == 'gn_plus_sequential_bn_first':
         return GNPLusSequentialBNFirst(group_num=n_group, c_num=c_out)
     elif norm == 'gn_plus_parallel':
-        return GroupNormPlusParallel(group_num=n_group, c_num=c_out)
+        return GNPlusParallel(group_num=n_group, c_num=c_out)
     else:
         return nn.Identity()
