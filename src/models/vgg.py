@@ -19,6 +19,7 @@ class GaussianNoise(nn.Module):
         return x
 
 class VGG16(nn.Module):
+    # VGG A not 16, sorry for wrong naming
     def __init__(self, inp_ch=3, num_classes=10, norm=None, mean=0.5, std=1.25):
         super().__init__()
         mean = mean
