@@ -10,14 +10,15 @@ Another idea?
 ## Improvement Part
 
 
+## Guide
+1. Run `python assert_script.py` to download all of the needed dataset and check
+2. Run `python main.py` with additional parameters based on your choice
+
 
 ## To do:
-<p>Add more dataloaders.
-
 <p>Implemented the metrics which can be used to compare the distribution difference.
-Test
-Try Again
 
 ## Reference
 1. https://github.com/AlexeyGB/batch-norm-helps-optimization
 2. https://github.com/kuangliu/pytorch-cifar
+3. https://github.com/bearpaw/pytorch-classification
