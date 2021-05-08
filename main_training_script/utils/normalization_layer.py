@@ -81,7 +81,7 @@ class GNPLusSequentialBNFirst(nn.Module):
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
         self.beta = nn.Parameter(torch.zeros(c_num, 1, 1))
         self.eps = eps
-        self.lambda_param = nn.Parameter(torch.tensor([0.5]))
+        self.lambda_param = nn.Parameter(torch.ones(1))
 
     def forward(self, x):
         N, C, H, W = x.size()

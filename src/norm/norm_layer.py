@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+# Original Implementation of GN
 class GroupNorm2d(nn.Module):
     def __init__(self, group_num, c_num, eps = 1e-5):
         super(GroupNorm2d,self).__init__()
@@ -22,15 +23,15 @@ class GroupNorm2d(nn.Module):
         x = x.view(N, C, H, W)
         return x * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPlusParallel(nn.Module):
-    # Unflowing gradient also occurs here
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPlusParallel,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
         self.beta = nn.Parameter(torch.zeros(c_num, 1, 1))
         self.eps = eps
-        self.lambda_param = nn.Parameter(torch.tensor([0.5]))
+        self.lambda_param = nn.Parameter(torch.ones(1))
 
     def forward(self, x):
         N, C, H, W = x.size()
@@ -45,16 +46,17 @@ class GNPlusParallel(nn.Module):
         std_bn = x.std(dim=0, keepdim=True)
         x = (x -  mean_bn) / (std_bn + self.eps)
         
-        return (self.lambda_param[0] * x_gn + (1 - self.lambda_param[0]) * x) * self.gamma + self.beta
+        return (torch.sigmoid(self.lambda_param[0]) * x_gn + (1 - torch.sigmoid(self.lambda_param[0])) * x) * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPlusSequentialGNFirst(nn.Module):
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPlusSequentialGNFirst,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
         self.beta = nn.Parameter(torch.zeros(c_num, 1, 1))
         self.eps = eps
-        self.lambda_param = nn.Parameter(torch.tensor([0.5]))
+        self.lambda_param = nn.Parameter(torch.ones(1))
 
     def forward(self, x):
         N, C, H, W = x.size()
@@ -69,16 +71,17 @@ class GNPlusSequentialGNFirst(nn.Module):
         std_bn = x_gn.std(dim=0, keepdim=True)
         x_bn = (x_gn -  mean_bn) / (std_bn + self.eps)
         
-        return (self.lambda_param[0] * x_gn + (1 - self.lambda_param[0]) * x_bn) * self.gamma + self.beta
+        return (torch.sigmoid(self.lambda_param[0]) * x_gn + (1 - torch.sigmoid(self.lambda_param[0])) * x_bn) * self.gamma + self.beta
 
+# Our Proposed Solution
 class GNPLusSequentialBNFirst(nn.Module):
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPLusSequentialBNFirst,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
         self.beta = nn.Parameter(torch.zeros(c_num, 1, 1))
         self.eps = eps
-        self.lambda_param = nn.Parameter(torch.tensor([0.5]))
+        self.lambda_param = nn.Parameter(torch.ones(1))
 
     def forward(self, x):
         N, C, H, W = x.size()
@@ -93,7 +96,7 @@ class GNPLusSequentialBNFirst(nn.Module):
         x_gn = (x_gn - mean_gn) / (std_gn + self.eps)
         x_gn = x_gn.view(N, C, H, W)
 
-        return (self.lambda_param[0] * x_gn + (1 - self.lambda_param[0]) * x_bn) * self.gamma + self.beta
+        return (torch.sigmoid(self.lambda_param[0]) * x_gn + (1 - torch.sigmoid(self.lambda_param[0])) * x_bn) * self.gamma + self.beta
 
 def get_norm_layer(c_out, n_group=32, norm='bn'):
     if norm == 'bn' or norm == 'bn_regularization':
