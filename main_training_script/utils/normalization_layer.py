@@ -25,8 +25,7 @@ class GroupNorm2d(nn.Module):
 
 # Our Proposed Solution
 class GNPlusParallel(nn.Module):
-    # Unflowing gradient also occurs here
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPlusParallel,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
@@ -51,7 +50,7 @@ class GNPlusParallel(nn.Module):
 
 # Our Proposed Solution
 class GNPlusSequentialGNFirst(nn.Module):
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPlusSequentialGNFirst,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))
@@ -76,7 +75,7 @@ class GNPlusSequentialGNFirst(nn.Module):
 
 # Our Proposed Solution
 class GNPLusSequentialBNFirst(nn.Module):
-    def __init__(self, group_num, c_num, eps = 1e-5, aux_loss=True):
+    def __init__(self, group_num, c_num, eps = 1e-5):
         super(GNPLusSequentialBNFirst,self).__init__()
         self.group_num = group_num
         self.gamma = nn.Parameter(torch.ones(c_num, 1, 1))

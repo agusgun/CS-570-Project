@@ -15,7 +15,8 @@ def main(args):
     if not os.path.isdir(args.checkpoint):
         mkdir_p(args.checkpoint)
 
-    trainloader, testloader = build_data_loader(args.dataset, args.batch_size)
+    trainloader, testloader = build_data_loader(args.dataset, batch_size=args.batch_size, test_batch_size=args.test_batch_size)
+
     num_classes = 0
     if args.dataset == 'cifar10' or args.dataset == 'svhn':
         num_classes = 10
@@ -51,6 +52,7 @@ if __name__ == '__main__':
                         metavar='W', help='weight decay (default: 1e-4)')
     parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
+    parser.add_argument('--test_batch_size', type=int, default=100, help='test batch size')
 
     # Important Params for Experiment
     parser.add_argument('-net', '--net', type=str,
@@ -61,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('-norm', '--normalization', help='choose the normalization layer', 
                         choices=['bn', 'gn', 'gn_plus_sequential_bn_first', 'gn_plus_sequential_gn_first', 'gn_plus_parallel'])
     parser.add_argument('--lr', '--learning-rate', type=float, help='choose the learning rate')
-    parser.add_argument('--batch_size', type=int, help='batch size', choices=[1, 2, 4, 8, 16, 32, 64, 128, 256])
+    parser.add_argument('--batch_size', type=int, help='training batch size', choices=[1, 2, 4, 8, 16, 32, 64, 128, 256])
     parser.add_argument('--epochs', type=int)
     parser.add_argument('--schedule', type=int, nargs='+',
                         help='Decrease learning rate at these epochs.')

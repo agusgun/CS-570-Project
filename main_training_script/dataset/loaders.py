@@ -5,7 +5,7 @@ import os
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-def get_cifar_10_loader(root='./data', batch_size=128, num_workers=8):
+def get_cifar_10_loader(root='./data', batch_size=128, test_batch_size=100, num_workers=8):
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -26,11 +26,11 @@ def get_cifar_10_loader(root='./data', batch_size=128, num_workers=8):
     testset = torchvision.datasets.CIFAR10(
         root=root, train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        testset, batch_size=test_batch_size, shuffle=False, num_workers=num_workers)
 
     return trainloader, testloader
 
-def get_cifar_100_loader(root='./data', batch_size=128, num_workers=8):
+def get_cifar_100_loader(root='./data', batch_size=128, test_batch_size=100, num_workers=8):
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -51,11 +51,11 @@ def get_cifar_100_loader(root='./data', batch_size=128, num_workers=8):
     testset = torchvision.datasets.CIFAR100(
         root=root, train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        testset, batch_size=test_batch_size, shuffle=False, num_workers=num_workers)
 
     return trainloader, testloader
 
-def get_svhn_loader(root='./data', batch_size=128, num_workers=8):
+def get_svhn_loader(root='./data', batch_size=128, test_batch_size=100, num_workers=8):
     normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5],
                                      std=[0.5, 0.5, 0.5])
 
@@ -71,12 +71,12 @@ def get_svhn_loader(root='./data', batch_size=128, num_workers=8):
     testset = torchvision.datasets.SVHN(
         root=root, split='test', download=True, transform=data_transforms)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        testset, batch_size=test_batch_size, shuffle=False, num_workers=num_workers)
 
     return trainloader, testloader
 
 # Not used
-def get_caltech256_loader(root='./data', batch_size=128, num_workers=8):
+def get_caltech256_loader(root='./data', batch_size=128, test_batch_size=100, num_workers=8):
     # train data augmentation on the fly
     transform_train = transforms.Compose([
         transforms.RandomCrop(299),
@@ -105,11 +105,11 @@ def get_caltech256_loader(root='./data', batch_size=128, num_workers=8):
     testset = torchvision.datasets.Caltech256(
         root=root, train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        testset, batch_size=test_batch_size, shuffle=False, num_workers=num_workers)
 
     return trainloader, testloader
 
-def get_imagenet_loader(root='./data', batch_size=128, num_workers=8):
+def get_imagenet_loader(root='./data', batch_size=128, test_batch_size=100, num_workers=8):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
     traindir = os.path.join(root, 'imagenet-mini', 'train')
@@ -132,7 +132,7 @@ def get_imagenet_loader(root='./data', batch_size=128, num_workers=8):
             transforms.ToTensor(),
             normalize,
         ])),
-        batch_size=batch_size, shuffle=False,
+        batch_size=test_batch_size, shuffle=False,
         num_workers=num_workers, pin_memory=True)
 
     return trainloader, testloader
