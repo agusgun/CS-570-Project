@@ -12,9 +12,6 @@
 ## Improvement Part
 1. Propose a new normalization layer by incorporating the underlying mechanism of BN to GN layer
 
-## Experiment Log
-The experiment log of our experiment and the result can be seen in this [link](https://docs.google.com/spreadsheets/d/1tCy2Gj8h4JbmqBhknoM-tB841vyHWISEvEIrdsVDwnc/edit?usp=sharing)
-
 ## Guide - Improvement Experiment
 1. Go to the `main_training_script` directory
 2. Run `python assert_script.py` to download all of the needed datasets and check
