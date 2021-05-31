@@ -1,22 +1,24 @@
 # Exploratory Repository to Understand Group Normalization and Improving the Layer
 
-## Understanding Part
-1. Does a time-varying perturbation affect the training or testing result of GN? Refer to [How Does Batch Normalization Help Optimization](https://arxiv.org/pdf/1805.11604.pdf) NIPS 2018 paper
-2. How about if we group the channel randomly or alternately? What effect will this perturbation give?
+## Important
+- All of the VGG16 written in the notebook is VGG11. We are very sorry for these writing mistakes.
+- All of the VGG plotted in the notebook is also VGG11.
 
-Observe the perturbation effect based on the gradient predictiveness, training accuracy, training loss, and testing loss and accuracy
-Another idea?
+## Understanding Part - Analysis Framework - [How Does Batch Normalization Help Optimization](https://arxiv.org/pdf/1805.11604.pdf)
+1. Does a time-varying perturbation affect the training of GN?
+2. The impact of GN layer on the training process of neural network
+3. The impact of regularization on the training process of neural network with GN
 
 ## Improvement Part
+1. Propose a new normalization layer by incorporating the underlying mechanism of BN to GN layer
 
+## Experiment Log
+The experiment log of our experiment and the result can be seen in this [link](https://docs.google.com/spreadsheets/d/1tCy2Gj8h4JbmqBhknoM-tB841vyHWISEvEIrdsVDwnc/edit?usp=sharing)
 
-## Guide
-1. Run `python assert_script.py` to download all of the needed dataset and check
-2. Run `python main.py` with additional parameters based on your choice
-
-
-## To do:
-<p>Implemented the metrics which can be used to compare the distribution difference.
+## Guide - Improvement Experiment
+1. Go to the `main_training_script` directory
+2. Run `python assert_script.py` to download all of the needed datasets and check
+3. Run `python main.py` with additional parameters based on your choice
 
 ## Reference
 1. https://github.com/AlexeyGB/batch-norm-helps-optimization
