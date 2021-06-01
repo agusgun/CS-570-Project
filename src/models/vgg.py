@@ -28,7 +28,7 @@ class VGG16(nn.Module):
         stage1 = []
         stage1.append(nn.Conv2d(in_channels=inp_ch, out_channels=64, kernel_size=3, padding=1))
         stage1.append(get_norm_layer(c_out=64, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage1.append(GaussianNoise(32, mean, std))
         stage1.append(nn.ReLU())
         stage1.append(nn.MaxPool2d(kernel_size=2, stride=2))
@@ -39,7 +39,7 @@ class VGG16(nn.Module):
         stage2 = []
         stage2.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1))
         stage2.append(get_norm_layer(c_out=128, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage2.append(GaussianNoise(32, mean, std))
         stage2.append(nn.ReLU())
         stage2.append(nn.MaxPool2d(kernel_size=2, stride=2))
@@ -50,12 +50,12 @@ class VGG16(nn.Module):
         stage3 = []
         stage3.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1))
         stage3.append(get_norm_layer(c_out=256, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage3.append(GaussianNoise(32, mean, std))
         stage3.append(nn.ReLU())
         stage3.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1))
         stage3.append(get_norm_layer(c_out=256, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage3.append(GaussianNoise(32, mean, std))
         stage3.append(nn.ReLU())
         stage3.append(nn.MaxPool2d(kernel_size=2, stride=2))
@@ -66,12 +66,12 @@ class VGG16(nn.Module):
         stage4 = []
         stage4.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1))
         stage4.append(get_norm_layer(c_out=512, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage4.append(GaussianNoise(32, mean, std))
         stage4.append(nn.ReLU())
         stage4.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1))
         stage4.append(get_norm_layer(c_out=512, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage4.append(GaussianNoise(32, mean, std))
         stage4.append(nn.ReLU())
         stage4.append(nn.MaxPool2d(kernel_size=2, stride=2))
@@ -82,12 +82,12 @@ class VGG16(nn.Module):
         stage5 = []
         stage5.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1))
         stage5.append(get_norm_layer(c_out=512, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage5.append(GaussianNoise(32, mean, std))
         stage5.append(nn.ReLU())
         stage5.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1))
         stage5.append(get_norm_layer(c_out=512, norm=norm))
-        if norm == 'gn_noisy' or norm == 'bn_noisy':
+        if norm == 'gn_noisy' or norm == 'bn_noisy' or norm == 'gn_plus_gn_first_noisy':
             stage5.append(GaussianNoise(32, mean, std))
         stage5.append(nn.ReLU())
         stage5.append(nn.MaxPool2d(kernel_size=2, stride=2))

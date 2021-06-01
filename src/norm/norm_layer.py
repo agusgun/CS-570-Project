@@ -106,17 +106,15 @@ def get_norm_layer(c_out, n_group=32, norm='bn'):
     elif norm == 'gn' or norm == 'gn_regularization':
         return GroupNorm2d(group_num=n_group, c_num=c_out)
     elif norm =='gn_noisy':
-        # return GroupNormPlusSequential(group_num=n_group, c_num=c_out)
-        return BGN(group_num=n_group, c_num=c_out)
-        # return GNBN(group_num=n_group, c_num=c_out)
+        return GroupNorm2d(group_num=n_group, c_num=c_out)
+    elif norm == 'gn_plus_gn_first_noisy':
+        return GNPlusSequentialGNFirst(group_num=n_group, c_num=c_out)
     elif norm == 'gn_plus_sequential_gn_first':
         return GNPlusSequentialGNFirst(group_num=n_group, c_num=c_out)
     elif norm == 'gn_plus_sequential_bn_first':
-        return GNPLusSequentialBNFirst(group_num=n_group, c_num=c_out)
+        return GNPlusSequentialBNFirst(group_num=n_group, c_num=c_out)
     elif norm == 'gn_plus_parallel':
         return GNPlusParallel(group_num=n_group, c_num=c_out)
-    elif norm == 'gn_extension':
-        return GroupNorm2dExtension(group_num=n_group, c_num=c_out)
     elif norm == 'bn_noisy':
         return nn.BatchNorm2d(c_out)
     elif norm == None or norm == 'regularization':
